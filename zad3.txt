@@ -1,0 +1,39 @@
+--4.
+SELECT COUNT(DISTINCT p.gid) AS "Liczba_budynków" FROM popp p, majrivers m
+WHERE p.f_codedesc = 'Building' AND ST_DWithin(p.geom, m.geom, 100000);
+
+CREATE TABLE tableB
+AS
+SELECT DISTINCT p.gid, p.cat, p.f_codedesc, p.f_code, p.type, p.geom FROM popp p, majrivers m
+WHERE p.f_codedesc = 'Building' AND ST_DWithin(p.geom, m.geom, 100000);
+
+--5.
+CREATE TABLE airportsNew
+AS
+SELECT name, geom, elev FROM airports;
+
+--a)
+SELECT name AS "Lotnisko_wschodnie" FROM airportsNew
+WHERE ST_X(geom) = (SELECT MAX(ST_X(geom)) FROM airportsNew);
+SELECT name AS "Lotnisko_zachodnie" FROM airportsNew
+WHERE ST_X(geom) = (SELECT MIN(ST_X(geom)) FROM airportsNew);
+
+--b)
+INSERT INTO airportsNew(name, geom, elev) VALUES
+('airportB',
+(SELECT ST_Centroid(ST_MakeLine((SELECT geom FROM airportsNew
+ WHERE ST_X(geom) = (SELECT MAX(ST_X(geom)) FROM airportsNew)), 
+(SELECT geom FROM airportsNew
+ WHERE ST_X(geom) = (SELECT MIN(ST_X(geom)) FROM airportsNew))))),
+ 170);
+
+--6.
+SELECT ST_Area(ST_Buffer(ST_ShortestLine(
+(SELECT geom FROM lakes WHERE names = 'Iliamna Lake'),
+(SELECT geom FROM airports WHERE name = 'AMBLER')),1000)) AS "Pole_Powierzchni";
+
+--7.
+SELECT tr.vegdesc, 
+(SUM(ST_Area(ST_Intersection(ST_Buffer(tun.geom,0.0),ST_Buffer(tr.geom,0.0))))+SUM(ST_Area(ST_Intersection(ST_Buffer(sw.geom,0.0),ST_Buffer(tr.geom,0.0))))) AS "Pole_Powierzchni"
+FROM tundra tun, trees tr, swamp sw
+GROUP BY tr.vegdesc;
